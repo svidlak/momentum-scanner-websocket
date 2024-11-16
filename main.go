@@ -10,9 +10,9 @@ import (
 )
 
 var (
-	clients      = make(map[*websocket.Conn]bool) // Connected clients
-	clientsMutex sync.Mutex                       // Mutex to protect the clients map
-	upgrader     = websocket.Upgrader{            // WebSocket upgrader
+	clients      = make(map[*websocket.Conn]bool)
+	clientsMutex sync.Mutex
+	upgrader     = websocket.Upgrader{
 		CheckOrigin: func(r *http.Request) bool {
 			return true
 		},
@@ -20,10 +20,8 @@ var (
 )
 
 func main() {
-	// Start the StockTitan WebSocket connection in a separate goroutine
 	go startStockTitanConnection()
 
-	// Start the HTTP server for client WebSocket connections
 	http.HandleFunc("/ws", handleClientConnections)
 	log.Println("WebSocket proxy is running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
@@ -38,14 +36,12 @@ func handleClientConnections(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
-	// Add the new client to the clients map
 	clientsMutex.Lock()
 	clients[conn] = true
 	clientsMutex.Unlock()
 
 	log.Println("New client connected")
 
-	// Remove the client when the connection closes
 	defer func() {
 		clientsMutex.Lock()
 		delete(clients, conn)
@@ -53,7 +49,6 @@ func handleClientConnections(w http.ResponseWriter, r *http.Request) {
 		log.Println("Client disconnected")
 	}()
 
-	// Keep the connection open and listen for client messages
 	for {
 		if _, _, err := conn.ReadMessage(); err != nil {
 			break
@@ -81,21 +76,17 @@ func startStockTitanConnection() {
 	log.Println("Connected to StockTitan WebSocket")
 
 	for {
-		// Read a message from StockTitan
 		_, messageBytes, err := conn.ReadMessage()
 		if err != nil {
 			log.Println("Error reading from StockTitan WebSocket:", err)
 			break
 		}
 
-		// Parse only the "header" part
-
 		if err := json.Unmarshal(messageBytes, &partialMessage); err != nil {
 			log.Printf("Error unmarshalling message header: %v", err)
 			continue
 		}
 
-		// Check if "header.type" is "journal"
 		if partialMessage.Header.Type == "journal" {
 			log.Println("Broadcasting journal message")
 			broadcastToClients(messageBytes)
