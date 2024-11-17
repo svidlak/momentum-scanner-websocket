@@ -26,11 +26,12 @@ var (
 var lastWebSocketMessage json.RawMessage
 
 type ServerStatus struct {
-	CPUUsage    string          `json:"cpu_usage"`
-	MemUsed     string          `json:"memory_used"`
-	MemTotal    string          `json:"memory_total"`
-	Alive       bool            `json:"alive"`
-	LastMessage json.RawMessage `json:"last_message"`
+	CPUUsage         string          `json:"cpu_usage"`
+	MemUsed          string          `json:"memory_used"`
+	MemTotal         string          `json:"memory_total"`
+	Alive            bool            `json:"alive"`
+	LastMessage      json.RawMessage `json:"last_message"`
+	ConnectedClients int             `json:"connected_clients"`
 }
 
 func main() {
@@ -38,24 +39,21 @@ func main() {
 
 	http.HandleFunc("/ws", handleClientConnections)
 
-	// Add /alive endpoint to return server status along with last WebSocket message
 	http.HandleFunc("/alive", func(w http.ResponseWriter, r *http.Request) {
-		// Gather CPU and memory metrics
 		cpuPercent, _ := cpu.Percent(0, false)
 		memStats, _ := mem.VirtualMemory()
 
-		// Format CPU and memory usage
 		cpuUsage := fmt.Sprintf("%.2f%%", cpuPercent[0])
 		memUsed := formatMemory(memStats.Used)
 		memTotal := formatMemory(memStats.Total)
 
-		// Build the server status with system metrics and the last WebSocket message
 		status := ServerStatus{
-			CPUUsage:    cpuUsage,
-			MemUsed:     memUsed,
-			MemTotal:    memTotal,
-			Alive:       true,
-			LastMessage: lastWebSocketMessage, // Add the last WebSocket message
+			CPUUsage:         cpuUsage,
+			MemUsed:          memUsed,
+			MemTotal:         memTotal,
+			Alive:            true,
+			LastMessage:      lastWebSocketMessage,
+			ConnectedClients: len(clients),
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -66,7 +64,6 @@ func main() {
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
 
-// Helper function to format memory usage
 func formatMemory(bytes uint64) string {
 	if bytes >= 1<<30 {
 		return fmt.Sprintf("%.2f GB", float64(bytes)/(1<<30))
