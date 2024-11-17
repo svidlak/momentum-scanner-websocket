@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"sync"
@@ -24,6 +25,10 @@ func main() {
 	go startStockTitanConnection()
 
 	http.HandleFunc("/ws", handleClientConnections)
+	http.HandleFunc("/alive", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK) // Optional: Explicitly set status code to 200
+		fmt.Fprintln(w, "OK")
+	})
 	log.Println("WebSocket proxy is running on :8080")
 	log.Fatal(http.ListenAndServe(":8080", nil))
 }
