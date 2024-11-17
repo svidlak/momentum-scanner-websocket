@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -36,12 +37,13 @@ func handleClientConnections(w http.ResponseWriter, r *http.Request) {
 	}
 	defer conn.Close()
 
+	// Add the new client to the clients map
 	clientsMutex.Lock()
 	clients[conn] = true
 	clientsMutex.Unlock()
-
 	log.Println("New client connected")
 
+	// Ensure client is removed on disconnect
 	defer func() {
 		clientsMutex.Lock()
 		delete(clients, conn)
@@ -49,10 +51,41 @@ func handleClientConnections(w http.ResponseWriter, r *http.Request) {
 		log.Println("Client disconnected")
 	}()
 
-	for {
-		if _, _, err := conn.ReadMessage(); err != nil {
-			break
+	// Set up keep-alive with Ping messages
+	pingTicker := time.NewTicker(30 * time.Second) // Adjust interval as needed
+	defer pingTicker.Stop()
+
+	// Set the initial read deadline
+	_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second)) // Adjust as needed
+
+	// Handle Pong messages to reset the deadline
+	conn.SetPongHandler(func(appData string) error {
+		log.Println("Received Pong from client")
+		_ = conn.SetReadDeadline(time.Now().Add(60 * time.Second)) // Extend deadline on pong
+		return nil
+	})
+
+	// Goroutine to send periodic pings
+	go func() {
+		for range pingTicker.C {
+			if err := conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				log.Println("Ping error:", err)
+				return // Exit the goroutine on error
+			}
+			log.Println("Ping sent to client")
 		}
+	}()
+
+	// Main loop to read messages
+	for {
+		_, _, err := conn.ReadMessage()
+		if err != nil {
+			log.Println("Read error:", err)
+			break // Exit the loop on read error
+		}
+		// Reset the read deadline after a successful read
+		conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		log.Println("Message received from client")
 	}
 }
 
