@@ -145,7 +145,7 @@ func startStockTitanConnection() {
 		"Origin": {"https://www.stocktitan.net"},
 	}
 	// Connect to StockTitan WebSocket
-	conn, _, err := websocket.DefaultDialer.Dial("wss://ws.stocktitan.net:9021/null", header)
+	conn, _, err := websocket.DefaultDialer.Dial("wss://ws.stocktitan.net:9022/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExNjY4NCwidXNlcm5hbWUiOiJzdmlkbGFrayIsInByZW1pdW0iOjEsInByZW1pdW1FeHBpcmF0aW9uIjoxNzMyNjcxNTg1LCJleHAiOjE3MzI1ODUxODUsImlhdCI6MTczMTk4MDM4NX0.7kXyeDVSvPADWmmMBAibLD2ZkHR4XLupa00-S9SN5fY", header)
 	if err != nil {
 		log.Fatal("Error connecting to StockTitan WebSocket:", err)
 	}
