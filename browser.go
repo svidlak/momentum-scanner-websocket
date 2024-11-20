@@ -16,8 +16,6 @@ func GetJWT() (string, error) {
 	defer cancel()
 
 	// Timeout for operations
-	ctx, cancel = context.WithTimeout(ctx, 60*time.Second)
-	defer cancel()
 
 	// Variables
 	loginURL := "https://www.stocktitan.net/"
