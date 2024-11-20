@@ -8,6 +8,8 @@ import (
 	"github.com/gorilla/websocket"
 )
 
+const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExNjY4NCwidXNlcm5hbWUiOiJzdmlkbGFrayIsInByZW1pdW0iOjEsInByZW1pdW1FeHBpcmF0aW9uIjoxNzMyODIwMjIyLCJleHAiOjE3MzI3MzM4MjIsImlhdCI6MTczMjEyOTAyMn0.7AB6FkHcWcJ4hdCBLbfceDQInrnsuVjla2TmtRxMn8E"
+
 func startStockTitanConnection() {
 	var partialMessage struct {
 		Header struct {
@@ -24,7 +26,6 @@ func startStockTitanConnection() {
 		"Accept-Encoding": {"gzip, deflate, br, zstd"},
 		"Accept-Language": {"en-US,en;q=0.9"},
 	}
-	jwt := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExNjY4NCwidXNlcm5hbWUiOiJzdmlkbGFrayIsInByZW1pdW0iOjEsInByZW1pdW1FeHBpcmF0aW9uIjoxNzMyNjcxNTg1LCJleHAiOjE3MzI1ODUxODUsImlhdCI6MTczMTk4MDM4NX0.7kXyeDVSvPADWmmMBAibLD2ZkHR4XLupa00-S9SN5fY"
 
 	conn, _, err := websocket.DefaultDialer.Dial("wss://ws.stocktitan.net:9022/"+jwt, header)
 	if err != nil {
