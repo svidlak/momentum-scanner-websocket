@@ -120,7 +120,7 @@ func sendMessage(channelID string, message *discordgo.MessageEmbed) {
 
 func InitDiscordBot() {
 	log.Println("Starting discord integration")
-	BotToken := os.Getenv("PORT")
+	BotToken := os.Getenv("DISCORD_BOT_TOKEN")
 	dg, err := discordgo.New("Bot " + BotToken)
 	if err != nil {
 		log.Fatalf("Error creating Discord session: %v", err)
