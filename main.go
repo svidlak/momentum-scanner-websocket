@@ -9,8 +9,6 @@ import (
 )
 
 func main() {
-	wsConn, err := GetJWT()
-	fmt.Println(wsConn, err)
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Println("Error loading .env file")
