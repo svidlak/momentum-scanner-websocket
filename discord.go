@@ -58,10 +58,12 @@ func sendDiscordMessage(messageBytes []byte) {
 	}
 	msg := formatMessage(data)
 
-	if data.Payload.PriceChangeRatio > 0 && data.Payload.Volume > 500000 && data.Payload.Price > 5 {
-		sendMessage(BullChannelId, msg)
-	} else {
-		sendMessage(BearChannelId, msg)
+	if data.Payload.Volume > 500000 && data.Payload.Price > 5 {
+		if data.Payload.PriceChangeRatio > 0 {
+			sendMessage(BullChannelId, msg)
+		} else {
+			sendMessage(BearChannelId, msg)
+		}
 	}
 }
 
