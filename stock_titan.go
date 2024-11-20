@@ -4,11 +4,10 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/gorilla/websocket"
 )
-
-const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExNjY4NCwidXNlcm5hbWUiOiJzdmlkbGFrayIsInByZW1pdW0iOjEsInByZW1pdW1FeHBpcmF0aW9uIjoxNzMyODIwMjIyLCJleHAiOjE3MzI3MzM4MjIsImlhdCI6MTczMjEyOTAyMn0.7AB6FkHcWcJ4hdCBLbfceDQInrnsuVjla2TmtRxMn8E"
 
 func startStockTitanConnection() {
 	var partialMessage struct {
@@ -16,6 +15,8 @@ func startStockTitanConnection() {
 			Type string `json:"type"`
 		} `json:"header"`
 	}
+
+	jwt := os.Getenv("JWT_TOKEN")
 
 	header := http.Header{
 		"Host":            {"ws.stocktitan.net:9022"},
