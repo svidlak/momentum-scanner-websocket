@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -80,20 +81,17 @@ func sendDiscordMessage(messageBytes []byte) {
 
 	if data.Payload.Volume > 500000 && data.Payload.Price > 5 {
 		if data.Payload.PriceChangeRatio > 0 {
-			msg := formatMessage(data, 1)
+			msg := formatMessage(data, 2)
 			sendMessage(BullChannelId, msg)
 		} else {
 
-			msg := formatMessage(data, 2)
+			msg := formatMessage(data, 1)
 			sendMessage(BearChannelId, msg)
 		}
 	}
 }
 
 func formatMessage(data WebSocketMessage, messageType int) *discordgo.MessageEmbed {
-	// Format market cap
-	marketCapFormatted := fmt.Sprintf("$%.2f", data.Payload.MarketCap)
-
 	// Default news title and URL
 	newsTitle := "No news available"
 	newsUrl := ""
@@ -114,11 +112,15 @@ func formatMessage(data WebSocketMessage, messageType int) *discordgo.MessageEmb
 		embedColor = 0x0000FF // Blue
 	}
 
+	marketCapFormatted := FormatNumber(int64(data.Payload.MarketCap))
+	volumeFormatted := FormatNumber(int64(data.Payload.Volume)) // Volume is already int, so just format
+	sharesFloatFormatted := FormatNumber(int64(data.Payload.SharesFloat))
+
 	// Create the embed
 	embed := &discordgo.MessageEmbed{
 		Title: fmt.Sprintf("🚨 Stock Alert: %s", data.Payload.Symbol),
-		Description: fmt.Sprintf("**Price**: `$%.2f`\n**Price Change**: `%.2f%%`\n**Market Cap**: `%s`\n**Volume**: `%d`\n**Shares Float**: `%d`",
-			data.Payload.Price, data.Payload.PriceChangeRatio*100, marketCapFormatted, data.Payload.Volume, int(data.Payload.SharesFloat)),
+		Description: fmt.Sprintf("**Price**: `$%.2f`\n**Price Change**: `%.2f%%`\n**Market Cap**: `%s`\n**Volume**: `%s`\n**Shares Float**: `%s`",
+			data.Payload.Price, data.Payload.PriceChangeRatio*100, marketCapFormatted, volumeFormatted, sharesFloatFormatted),
 		Color: embedColor, // Set the color of the embed (hexadecimal, e.g., orange)
 		Fields: []*discordgo.MessageEmbedField{
 			{
@@ -139,6 +141,10 @@ func formatMessage(data WebSocketMessage, messageType int) *discordgo.MessageEmb
 	}
 
 	return embed
+}
+
+func FormatNumber(n int64) string {
+	return strconv.FormatInt(n, 10)
 }
 
 // sendMessage posts a message to a Discord channel
