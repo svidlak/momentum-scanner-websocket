@@ -142,11 +142,23 @@ func startStockTitanConnection() {
 	}
 
 	header := http.Header{
-		"Origin": {"https://www.stocktitan.net"},
+		"Host":                  {"ws.stocktitan.net:9022"},
+		"Connection":            {"Upgrade"},
+		"Pragma":                {"no-cache"},
+		"Cache-Control":         {"no-cache"},
+		"User-Agent":            {"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36"},
+		"Upgrade":               {"websocket"},
+		"Origin":                {"https://www.stocktitan.net"},
+		"Sec-WebSocket-Version": {"13"},
+		"Accept-Encoding":       {"gzip, deflate, br, zstd"},
+		"Accept-Language":       {"en-US,en;q=0.9"},
+		// Uncomment and set a proper Sec-WebSocket-Key if needed
+		// "Sec-WebSocket-Key":    {"IbEsPZXh+6/al/MlER8E+A=="},
+		"Sec-WebSocket-Extensions": {"permessage-deflate; client_max_window_bits"},
 	}
+
 	// Connect to StockTitan WebSocket
-	jwt := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExNjY4NCwidXNlcm5hbWUiOiJzdmlkbGFrayIsInByZW1pdW0iOjEsInByZW1pdW1FeHBpcmF0aW9uIjoxNzMyNjcxNTg1LCJleHAiOjE3MzI1ODUxODUsImlhdCI6MTczMTk4MDM4NX0.7kXyeDVSvPADWmmMBAibLD2ZkHR4XLupa00-S9SN5fY"
-	conn, _, err := websocket.DefaultDialer.Dial("wss://ws.stocktitan.net:9022/"+jwt, header)
+	conn, _, err := websocket.DefaultDialer.Dial("wss://ws.stocktitan.net:9022/eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOjExNjY4NCwidXNlcm5hbWUiOiJzdmlkbGFrayIsInByZW1pdW0iOjEsInByZW1pdW1FeHBpcmF0aW9uIjowLCJleHAiOjE3MzI1Njg1OTEsImlhdCI6MTczMTk2Mzc5MX0.MD6X39CW-NTrjzGbgqGoW9ovzkAYYMgmTzBlCMNCREg", header)
 	if err != nil {
 		log.Fatal("Error connecting to StockTitan WebSocket:", err)
 	}
