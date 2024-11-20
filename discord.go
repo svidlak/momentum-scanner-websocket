@@ -81,10 +81,10 @@ func sendDiscordMessage(messageBytes []byte) {
 
 	if data.Payload.Volume > 500000 && data.Payload.Price > 5 {
 		if data.Payload.PriceChangeRatio > 0 {
-			msg := formatMessage(data, 1)
+			msg := formatMessage(data, 2)
 			sendMessage(BullChannelId, msg)
 		} else {
-			msg := formatMessage(data, 2)
+			msg := formatMessage(data, 1)
 			sendMessage(BearChannelId, msg)
 		}
 	}
@@ -143,7 +143,22 @@ func formatMessage(data WebSocketMessage, messageType int) *discordgo.MessageEmb
 }
 
 func FormatNumber(n int64) string {
-	return strconv.FormatInt(n, 10)
+	strNum := strconv.FormatInt(n, 10)
+	return AddCommas(strNum)
+}
+
+func AddCommas(numStr string) string {
+	result := ""
+	count := 0
+
+	for i := len(numStr) - 1; i >= 0; i-- {
+		count++
+		result = string(numStr[i]) + result
+		if count%3 == 0 && i != 0 {
+			result = "," + result
+		}
+	}
+	return result
 }
 
 // sendMessage posts a message to a Discord channel

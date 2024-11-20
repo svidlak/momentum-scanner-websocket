@@ -61,8 +61,8 @@ func startStockTitanConnection() {
 
 			if partialMessage.Header.Type == "journal" {
 				lastWebSocketMessage = messageBytes
-				sendDiscordMessage(messageBytes)
-				broadcastToClients(messageBytes)
+				go sendDiscordMessage(messageBytes)
+				go broadcastToClients(messageBytes)
 			}
 		}
 	}
