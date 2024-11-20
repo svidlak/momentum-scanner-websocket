@@ -13,9 +13,9 @@ type ServerStatus struct {
 	CPUUsage         string          `json:"cpu_usage"`
 	MemUsed          string          `json:"mem_used"`
 	MemTotal         string          `json:"mem_total"`
-	Alive            bool            `json:"alive"`
 	LastMessage      json.RawMessage `json:"last_message"`
 	ConnectedClients int             `json:"connected_clients"`
+	Alive            bool            `json:"alive"`
 }
 
 func serverStatusHandler(w http.ResponseWriter, r *http.Request) {

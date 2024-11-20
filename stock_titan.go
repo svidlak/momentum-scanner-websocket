@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -28,35 +29,41 @@ func startStockTitanConnection() {
 		"Accept-Language": {"en-US,en;q=0.9"},
 	}
 
-	conn, _, err := websocket.DefaultDialer.Dial("wss://ws.stocktitan.net:9022/"+jwt, header)
-	if err != nil {
-		log.Println("Error connecting to StockTitan WebSocket:", err)
-		sendStatusMessage(1)
-		startStockTitanConnection()
-	}
-	defer conn.Close()
-
-	log.Println("Connected to StockTitan WebSocket")
-	sendStatusMessage(0)
-
 	for {
-		_, messageBytes, err := conn.ReadMessage()
+		// Try to establish WebSocket connection
+		conn, _, err := websocket.DefaultDialer.Dial("wss://ws.stocktitan.net:9022/"+jwt, header)
 		if err != nil {
-			log.Println("Error reading from StockTitan WebSocket:", err)
-			sendStatusMessage(1)
-			startStockTitanConnection()
-			break
+			log.Println("Error connecting to StockTitan WebSocket:", err)
+			sendStatusMessage(1)        // Send failure status
+			time.Sleep(5 * time.Second) // Wait before retrying
+			continue                    // Retry connection
 		}
+		defer conn.Close() // Ensure connection is closed after reading
 
-		if err := json.Unmarshal(messageBytes, &partialMessage); err != nil {
-			log.Printf("Error unmarshalling message header: %v", err)
-			continue
-		}
+		log.Println("Connected to StockTitan WebSocket")
+		sendStatusMessage(0) // Send success status
 
-		if partialMessage.Header.Type == "journal" {
-			lastWebSocketMessage = messageBytes
-			sendDiscordMessage(messageBytes)
-			broadcastToClients(messageBytes)
+		// Handle messages from StockTitan WebSocket
+		for {
+			_, messageBytes, err := conn.ReadMessage() // Read message from WebSocket
+			if err != nil {
+				log.Println("Error reading from StockTitan WebSocket:", err)
+				sendStatusMessage(1) // Send failure status
+				conn.Close()         // Close the connection before reconnecting
+				break                // Break out of the inner loop to reconnect
+			}
+
+			// Unmarshal and process the message
+			if err := json.Unmarshal(messageBytes, &partialMessage); err != nil {
+				log.Printf("Error unmarshalling message header: %v", err)
+				continue // Skip this message and keep reading
+			}
+
+			if partialMessage.Header.Type == "journal" {
+				lastWebSocketMessage = messageBytes
+				sendDiscordMessage(messageBytes)
+				broadcastToClients(messageBytes)
+			}
 		}
 	}
 }

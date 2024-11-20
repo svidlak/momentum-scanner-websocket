@@ -10,10 +10,11 @@ import (
 )
 
 const (
-	BullChannelId = "1308554651783659591"
-	BearChannelId = "1308554686739124344"
-	serverStatus  = "1308874016005689345"
-	userId        = "208296432371761152"
+	BullChannelId      = "1308554651783659591"
+	BearChannelId      = "1308554686739124344"
+	NewsChannelId      = "1308554616975392768"
+	ServerStatusChanel = "1308874016005689345"
+	userId             = "208296432371761152"
 )
 
 type WebSocketMessage struct {
@@ -54,14 +55,14 @@ var dgInstance *discordgo.Session
 func sendStatusMessage(messageType int) {
 	var message string
 	if messageType == 1 {
-		message = "⚠️ **WebSocket Disconnected:** Retrying to reconnect...\n<@" + userId + ">!"
+		message = "⚠️  **WebSocket Disconnected:** Retrying to reconnect...\n<@" + userId + ">!"
 	}
 
 	if messageType == 0 {
-		message = "✅**WebSocket Status:** Online."
+		message = "✅ **WebSocket Status:** Online."
 	}
 
-	dgInstance.ChannelMessageSend(serverStatus, message)
+	dgInstance.ChannelMessageSend(ServerStatusChanel, message)
 }
 
 func sendDiscordMessage(messageBytes []byte) {
@@ -71,18 +72,25 @@ func sendDiscordMessage(messageBytes []byte) {
 		log.Printf("Failed to format json message: %v\n", err)
 		return
 	}
-	msg := formatMessage(data)
+
+	if data.Payload.News != nil && len(data.Payload.News) > 0 && data.Payload.AlertCount == 1 {
+		msg := formatMessage(data, 0)
+		sendMessage(BullChannelId, msg)
+	}
 
 	if data.Payload.Volume > 500000 && data.Payload.Price > 5 {
 		if data.Payload.PriceChangeRatio > 0 {
+			msg := formatMessage(data, 1)
 			sendMessage(BullChannelId, msg)
 		} else {
+
+			msg := formatMessage(data, 2)
 			sendMessage(BearChannelId, msg)
 		}
 	}
 }
 
-func formatMessage(data WebSocketMessage) *discordgo.MessageEmbed {
+func formatMessage(data WebSocketMessage, messageType int) *discordgo.MessageEmbed {
 	// Format market cap
 	marketCapFormatted := fmt.Sprintf("$%.2f", data.Payload.MarketCap)
 
@@ -95,11 +103,17 @@ func formatMessage(data WebSocketMessage) *discordgo.MessageEmbed {
 		newsUrl = "https://www.stocktitan.net/news/" + data.Payload.Symbol + "/" + data.Payload.News[0].InternalURL + ".html"
 	}
 
-	// Determine the color based on PriceChangeRatio
-	embedColor := 0xFF0000
-	if data.Payload.PriceChangeRatio > 0 {
-		embedColor = 0x00FF00 // Green if price change ratio is positive
+	var embedColor int
+
+	switch messageType {
+	case 1:
+		embedColor = 0xFF0000 // Red
+	case 2:
+		embedColor = 0x00FF00 // Green
+	case 0:
+		embedColor = 0x0000FF // Blue
 	}
+
 	// Create the embed
 	embed := &discordgo.MessageEmbed{
 		Title: fmt.Sprintf("🚨 Stock Alert: %s", data.Payload.Symbol),
