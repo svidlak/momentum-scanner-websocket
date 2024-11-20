@@ -2,9 +2,9 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -17,7 +17,7 @@ func startStockTitanConnection() {
 		} `json:"header"`
 	}
 
-	jwt := os.Getenv("JWT_TOKEN")
+	// jwt := os.Getenv("JWT_TOKEN")
 
 	header := http.Header{
 		"Host":            {"ws.stocktitan.net:9022"},
@@ -30,8 +30,10 @@ func startStockTitanConnection() {
 	}
 
 	for {
+		wsConn, err := GetJWT()
+		fmt.Println(wsConn, err)
 		// Try to establish WebSocket connection
-		conn, _, err := websocket.DefaultDialer.Dial("wss://ws.stocktitan.net:9022/"+jwt, header)
+		conn, _, err := websocket.DefaultDialer.Dial(wsConn, header)
 		if err != nil {
 			log.Println("Error connecting to StockTitan WebSocket:", err)
 			sendStatusMessage(1)        // Send failure status
