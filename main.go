@@ -11,6 +11,8 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/shirou/gopsutil/v3/cpu"
 	"github.com/shirou/gopsutil/v3/mem"
+
+	"github.com/joho/godotenv"
 )
 
 var (
@@ -35,6 +37,11 @@ type ServerStatus struct {
 }
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("Error loading .env file")
+	}
+	InitDiscordBot()
 	go startStockTitanConnection()
 
 	http.HandleFunc("/ws", handleClientConnections)
