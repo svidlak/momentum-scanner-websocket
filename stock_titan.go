@@ -37,7 +37,7 @@ func startStockTitanConnection() {
 	defer conn.Close()
 
 	log.Println("Connected to StockTitan WebSocket")
-	sendStatusMessage(1)
+	sendStatusMessage(0)
 
 	for {
 		_, messageBytes, err := conn.ReadMessage()

@@ -54,11 +54,11 @@ var dgInstance *discordgo.Session
 func sendStatusMessage(messageType int) {
 	var message string
 	if messageType == 1 {
-		message = "⚠️ **WebSocket Disconnected:** Retrying to reconnect..."
+		message = "⚠️ **WebSocket Disconnected:** Retrying to reconnect...\n<@" + userId + ">!"
 	}
 
 	if messageType == 0 {
-		message = "✅**WebSocket Status:** Online\nHello, <@" + userId + ">!"
+		message = "✅**WebSocket Status:** Online."
 	}
 
 	dgInstance.ChannelMessageSend(serverStatus, message)
