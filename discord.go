@@ -76,7 +76,7 @@ func sendDiscordMessage(messageBytes []byte) {
 
 	if data.Payload.News != nil && len(data.Payload.News) > 0 && data.Payload.AlertCount == 1 {
 		msg := formatMessage(data, 0)
-		sendMessage(BullChannelId, msg)
+		sendMessage(NewsChannelId, msg)
 	}
 
 	if data.Payload.Volume > 500000 && data.Payload.Price > 5 {
