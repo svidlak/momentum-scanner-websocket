@@ -12,6 +12,8 @@ import (
 const (
 	BullChannelId = "1308554651783659591"
 	BearChannelId = "1308554686739124344"
+	serverStatus  = "1308874016005689345"
+	userId        = "208296432371761152"
 )
 
 type WebSocketMessage struct {
@@ -48,6 +50,19 @@ type WebSocketMessage struct {
 }
 
 var dgInstance *discordgo.Session
+
+func sendStatusMessage(messageType int) {
+	var message string
+	if messageType == 1 {
+		message = "⚠️ **WebSocket Disconnected:** Retrying to reconnect..."
+	}
+
+	if messageType == 0 {
+		message = "✅**WebSocket Status:** Online\nHello, <@" + userId + ">!"
+	}
+
+	dgInstance.ChannelMessageSend(serverStatus, message)
+}
 
 func sendDiscordMessage(messageBytes []byte) {
 	var data WebSocketMessage

@@ -30,22 +30,27 @@ func startStockTitanConnection() {
 
 	conn, _, err := websocket.DefaultDialer.Dial("wss://ws.stocktitan.net:9022/"+jwt, header)
 	if err != nil {
-		log.Fatal("Error connecting to StockTitan WebSocket:", err)
+		log.Println("Error connecting to StockTitan WebSocket:", err)
+		sendStatusMessage(1)
+		startStockTitanConnection()
 	}
 	defer conn.Close()
 
 	log.Println("Connected to StockTitan WebSocket")
+	sendStatusMessage(1)
 
 	for {
 		_, messageBytes, err := conn.ReadMessage()
 		if err != nil {
 			log.Println("Error reading from StockTitan WebSocket:", err)
+			sendStatusMessage(1)
+			startStockTitanConnection()
 			break
 		}
 
 		if err := json.Unmarshal(messageBytes, &partialMessage); err != nil {
 			log.Printf("Error unmarshalling message header: %v", err)
-			startStockTitanConnection()
+			continue
 		}
 
 		if partialMessage.Header.Type == "journal" {
