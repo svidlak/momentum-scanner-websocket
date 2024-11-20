@@ -44,7 +44,7 @@ func startStockTitanConnection() {
 
 		if err := json.Unmarshal(messageBytes, &partialMessage); err != nil {
 			log.Printf("Error unmarshalling message header: %v", err)
-			continue
+			startStockTitanConnection()
 		}
 
 		if partialMessage.Header.Type == "journal" {
