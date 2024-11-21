@@ -124,6 +124,24 @@ func startStockTitanConnection() {
 				continue
 			}
 
+			if partialMessage.Header.Type == "ping" {
+				pongMessage := map[string]interface{}{
+					"type": "pong",
+				}
+
+				pongBytes, err := json.Marshal(pongMessage)
+				if err != nil {
+					log.Printf("Error marshalling pong message: %v", err)
+					continue
+				}
+
+				if err := conn.WriteMessage(websocket.TextMessage, pongBytes); err != nil {
+					log.Printf("Error writing pong message: %v", err)
+					continue
+				}
+
+			}
+
 			if partialMessage.Header.Type == "journal" {
 				lastWebSocketMessage = messageBytes
 				go sendDiscordMessage(messageBytes)
