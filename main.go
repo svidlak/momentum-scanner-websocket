@@ -4,9 +4,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/joho/godotenv"
 )
+
+func init() {
+	os.Setenv("TZ", "Asia/Jerusalem")
+}
 
 func main() {
 	err := godotenv.Load()

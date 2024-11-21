@@ -63,6 +63,14 @@ func startStockTitanConnection() {
 	for {
 		currentTime := time.Now().In(nyc)
 
+		// Check if today is Saturday or Sunday
+		if currentTime.Weekday() == time.Saturday || currentTime.Weekday() == time.Sunday {
+			// Sleep until Monday
+			nextMonday := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day()+int(time.Monday-currentTime.Weekday()), 3, 45, 0, 0, nyc)
+			sleepUntil(nextMonday, "weekend")
+			continue
+		}
+
 		// Calculate next market open and close times
 		startTime := getNextMarketOpenTime(nyc, currentTime)
 		endTime := getNextMarketCloseTime(nyc, currentTime)

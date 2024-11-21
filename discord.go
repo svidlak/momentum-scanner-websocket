@@ -11,9 +11,10 @@ import (
 )
 
 const (
-	BullChannelId      = "1308554651783659591"
-	BearChannelId      = "1308554686739124344"
-	NewsChannelId      = "1308554616975392768"
+	BullChannelId = "1309202216967602218"
+	BearChannelId = "1309202267160838144"
+	NewsChannelId = "1309202734863613952"
+
 	ServerStatusChanel = "1308874016005689345"
 	userId             = "208296432371761152"
 )
@@ -51,7 +52,10 @@ type WebSocketMessage struct {
 	} `json:"payload"`
 }
 
-var dgInstance *discordgo.Session
+var (
+	childDgInstance  *discordgo.Session
+	masterDgInstance *discordgo.Session
+)
 
 func sendStatusMessage(messageType int) {
 	var message string
@@ -63,7 +67,7 @@ func sendStatusMessage(messageType int) {
 		message = "✅ **WebSocket Status:** Online."
 	}
 
-	dgInstance.ChannelMessageSend(ServerStatusChanel, message)
+	masterDgInstance.ChannelMessageSend(ServerStatusChanel, message)
 }
 
 func sendDiscordMessage(messageBytes []byte) {
@@ -163,7 +167,7 @@ func AddCommas(numStr string) string {
 
 // sendMessage posts a message to a Discord channel
 func sendMessage(channelID string, message *discordgo.MessageEmbed) {
-	_, err := dgInstance.ChannelMessageSendEmbed(channelID, message)
+	_, err := childDgInstance.ChannelMessageSendEmbed(channelID, message)
 	if err != nil {
 		log.Printf("Failed to send message: %v\n", err)
 	}
@@ -171,8 +175,10 @@ func sendMessage(channelID string, message *discordgo.MessageEmbed) {
 
 func InitDiscordBot() {
 	log.Println("Starting discord integration")
-	BotToken := os.Getenv("DISCORD_BOT_TOKEN")
-	dg, err := discordgo.New("Bot " + BotToken)
+	childBotToken := os.Getenv("CHILD_DISCORD_BOT_TOKEN")
+	masterBotToken := os.Getenv("MAIN_DISCORD_BOT_TOKEN")
+
+	childDgInstanceCon, err := discordgo.New("Bot " + childBotToken)
 	if err != nil {
 		log.Fatalf("Error creating Discord session: %v", err)
 	}
@@ -181,5 +187,15 @@ func InitDiscordBot() {
 		log.Fatalf("Error opening Discord connection: %v", err)
 	}
 
-	dgInstance = dg
+	masterDgInstanceCon, err := discordgo.New("Bot " + masterBotToken)
+	if err != nil {
+		log.Fatalf("Error creating Discord session: %v", err)
+	}
+
+	if err != nil {
+		log.Fatalf("Error opening Discord connection: %v", err)
+	}
+
+	masterDgInstance = masterDgInstanceCon
+	childDgInstance = childDgInstanceCon
 }
