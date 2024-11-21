@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -10,13 +9,42 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func startStockTitanConnection() {
-	var partialMessage struct {
-		Header struct {
-			Type string `json:"type"`
-		} `json:"header"`
-	}
+const (
+	preMarketStartHour   = 3  // 4:00 AM EST/EDT
+	afterMarketCloseHour = 20 // 8:00 PM EST/EDT
+)
 
+func getNextMarketOpenTime(nyc *time.Location, currentTime time.Time) time.Time {
+	// Define the pre-market start time (4:00 AM EST/EDT)
+	return time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), preMarketStartHour, 45, 0, 0, nyc)
+}
+
+func getNextMarketCloseTime(nyc *time.Location, currentTime time.Time) time.Time {
+	// Define the after-market close time (8:00 PM EST/EDT)
+	return time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), afterMarketCloseHour, 5, 0, 0, nyc)
+}
+
+func sleepUntil(nextTime time.Time, condition string) {
+	sleepDuration := time.Until(nextTime)
+	log.Println(condition)
+	log.Printf("Sleeping for %v until %v...\n", sleepDuration, nextTime)
+	time.Sleep(sleepDuration)
+}
+
+func connectToStockTitanWebSocket(header http.Header) (*websocket.Conn, error) {
+	wsConn, err := GetJWT()
+	if err != nil {
+		return nil, err
+	}
+	conn, _, err := websocket.DefaultDialer.Dial(wsConn, header)
+	if err != nil {
+		return nil, err
+	}
+	return conn, nil
+}
+
+func startStockTitanConnection() {
+	// Prepare WebSocket headers
 	header := http.Header{
 		"Host":            {"ws.stocktitan.net:9022"},
 		"Pragma":          {"no-cache"},
@@ -33,67 +61,67 @@ func startStockTitanConnection() {
 	}
 
 	for {
-		currentTime := time.Now().In(nyc) // Get current time in New York timezone
+		currentTime := time.Now().In(nyc)
 
-		// Define the pre-market start time (4:00 AM EST/EDT) and after-market close time (8:00 PM EST/EDT)
-		startTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), 3, 45, 0, 0, nyc) // 4:00 AM EST/EDT
-		endTime := time.Date(currentTime.Year(), currentTime.Month(), currentTime.Day(), 20, 5, 0, 0, nyc)   // 8:00 PM EST/EDT
+		// Calculate next market open and close times
+		startTime := getNextMarketOpenTime(nyc, currentTime)
+		endTime := getNextMarketCloseTime(nyc, currentTime)
 
-		// Adjust for the next day if the current time is past after-market close (8:00 PM)
+		// Adjust for the next day if past after-market close
 		if currentTime.After(endTime) {
 			startTime = startTime.Add(24 * time.Hour)
 			endTime = endTime.Add(24 * time.Hour)
 		}
 
-		// Sleep until the pre-market opens (4:00 AM EST/EDT) or after-market closes (8:00 PM EST/EDT)
+		// Sleep until market opens or closes
 		if currentTime.Before(startTime) {
-			// If it's before pre-market opening, sleep until 4:00 AM EST/EDT
-			sleepDuration := time.Until(startTime)
-			log.Printf("Sleeping for %v until pre-market opens at 4:00 AM EST/EDT...\n", sleepDuration)
-			time.Sleep(sleepDuration)
+			sleepUntil(startTime, "before")
 		} else if currentTime.After(endTime) {
-			// If it's after after-market close, sleep until 4:00 AM EST/EDT the next day
-			sleepDuration := time.Until(startTime.Add(24 * time.Hour))
-			log.Printf("Sleeping for %v until pre-market opens at 4:00 AM EST/EDT next day...\n", sleepDuration)
-			time.Sleep(sleepDuration)
+			sleepUntil(startTime.Add(24*time.Hour), "after")
 		}
-		// WebSocket connection should be established only during the allowed time window
-		wsConn, err := GetJWT()
-		fmt.Println(wsConn, err)
-		conn, _, err := websocket.DefaultDialer.Dial(wsConn, header)
+
+		// Establish WebSocket connection during valid trading hours
+		conn, err := connectToStockTitanWebSocket(header)
 		if err != nil {
 			log.Println("Error connecting to StockTitan WebSocket:", err)
-			sendStatusMessage(1)        // Send failure status
-			time.Sleep(5 * time.Second) // Wait before retrying
-			continue                    // Retry connection
+			sendStatusMessage(1)
+			time.Sleep(5 * time.Second)
+			continue
 		}
-		defer conn.Close() // Ensure connection is closed after reading
+		defer conn.Close()
 
 		log.Println("Connected to StockTitan WebSocket")
-		sendStatusMessage(0) // Send success status
+		sendStatusMessage(0)
 
-		// Handle messages from StockTitan WebSocket
+		// Handle WebSocket messages
+		var partialMessage struct {
+			Header struct {
+				Type string `json:"type"`
+			} `json:"header"`
+		}
+
 		for {
-
 			currentTime = time.Now().In(nyc)
-			// If after the after-market (after 8:00 PM), close the WebSocket connection
+
+			// If it's after the after-market, close the connection
 			if currentTime.After(endTime) {
 				log.Println("After market close. Closing WebSocket connection.")
 				conn.Close()
-				break // Break the loop to close and reconnect after sleeping
-			}
-			_, messageBytes, err := conn.ReadMessage() // Read message from WebSocket
-			if err != nil {
-				log.Println("Error reading from StockTitan WebSocket:", err)
-				sendStatusMessage(1) // Send failure status
-				conn.Close()         // Close the connection before reconnecting
-				break                // Break out of the inner loop to reconnect
+				break
 			}
 
-			// Unmarshal and process the message
+			_, messageBytes, err := conn.ReadMessage()
+			if err != nil {
+				log.Println("Error reading from StockTitan WebSocket:", err)
+				sendStatusMessage(1)
+				conn.Close()
+				break
+			}
+
+			// Process the received message
 			if err := json.Unmarshal(messageBytes, &partialMessage); err != nil {
 				log.Printf("Error unmarshalling message header: %v", err)
-				continue // Skip this message and keep reading
+				continue
 			}
 
 			if partialMessage.Header.Type == "journal" {
